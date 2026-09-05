@@ -2,21 +2,37 @@ pipeline {
     agent any
 
     stages {
+
+        stage('Clone') {
+            steps {
+                git branch: 'main',
+                    url: 'YOUR-GITHUB-REPOSITORY-URL'
+            }
+        }
+
         stage('Build') {
             steps {
-                sh 'mvn clean package'
+                sh 'mvn clean package -DskipTests'
             }
         }
 
-        stage('Test') {
+        stage('Docker Build') {
             steps {
-                sh 'mvn test'
+                sh 'docker build -t real-estate-app .'
             }
         }
 
-        stage('Deploy') {
+        stage('Docker Deploy') {
             steps {
-                echo 'Deploying application...'
+                sh '''
+                    docker stop real-estate-container || true
+                    docker rm real-estate-container || true
+
+                    docker run -d \
+                    -p 8080:8080 \
+                    --name real-estate-container \
+                    real-estate-app
+                '''
             }
         }
     }
